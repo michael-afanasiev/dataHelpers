@@ -58,10 +58,11 @@ f = open ('breqFastDriver.sh', 'w')
 f.write ('#/bin/bash \n')
 for event, time in zip (eventString, timeString):
   f.write (
-      './generateBreqFastRequest.py --event_name ' + event + ' ' + 
+      './dataHelpers/generateBreqFastRequest.py --event_name ' + event + ' ' + 
       '--station_list ' + args.station_list + ' ' +
       '--start_time ' + time + ' ' +
       '--recording_time ' + args.recording_time + '\n')
 
 f.close ()
 
+print "\nNow run the command 'sh ./breqFastDriver.sh' to batch generate your breqFast requests.'"

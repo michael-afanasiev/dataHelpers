@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import csv
 import argparse
 import datetime
@@ -57,9 +58,15 @@ def getStations (fName):
 Generate breakfast request.
 '''
 
+if not os.path.exists ('./MISC'):
+  os.makedirs ('./MISC')
+
+if not os.path.exists ('./MISC/breqFastRequests'):
+  os.makedirs ('./MISC/breqFastRequests')
+
 args = getArgs ()
 
-templateFile = open ('./breqFastTemplate.txt', 'r')
+templateFile = open ('./dataHelpers/breqFastTemplate.txt', 'r')
 header       = Template (templateFile.read ())
 templateFile.close ()
 
@@ -98,7 +105,7 @@ del end_time[-2::]
 args.start_time.append (startMicroString)
 end_time.append (endMicroString)
 
-request = open (args.event_name +'.bqFast', 'w')
+request = open ('./MISC/breqFastRequests/' + args.event_name +'.bqFast', 'w')
 request.write (newHeader)
 for station in zip (stations, networks):
   request.write (' '.join (station) + ' ' + ' '.join(args.start_time) + ' ' + 
