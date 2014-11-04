@@ -1,0 +1,10 @@
+.NAME Michael Afanasiev
+.INST ETH Zurich
+.MAIL NO H 39.2, Sonnegstrasse 5, Zurich, Swizterland, 8092
+.EMAIL michael.afanasiev@erdw.ethz.ch
+.PHONE +41 44 633 26 05 x3 7161
+.FAX +41 44 633 10 65
+.MEDIA Electronic
+.LABEL $LABEL
+.QUALITY B
+.END
