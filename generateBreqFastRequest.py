@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import dataModule
+
 import os
 import csv
 import argparse
@@ -32,28 +34,6 @@ def getArgs ():
 
   return parser.parse_args ()
   
-def getStations (fName):
-  
-  '''
-  Little function to return the station code and network codes.
-  '''
-  
-  stations = []
-  networks = []
-  f = open (fName, 'r')
-  for line in f:
-    
-    fields = line.split ()
-    
-    # Don't include duplicate stations.
-    if fields[0].ljust(4) in stations:
-      continue
- 
-    stations.append (fields[0].ljust(4))
-    networks.append (fields[1].ljust(2))
-    
-  return stations, networks
-  
 '''
 Generate breakfast request.
 '''
@@ -73,7 +53,7 @@ templateFile.close ()
 newHeaderArgs = {'LABEL':args.event_name}
 newHeader     = header.substitute (newHeaderArgs)
 
-stations, networks = getStations (args.station_list)
+stations, networks = dataModule.getStations (args.station_list)
 
 sYear   = int (args.start_time[0])
 sMonth  = int (args.start_time[1])
