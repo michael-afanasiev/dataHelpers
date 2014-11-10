@@ -46,9 +46,9 @@ def getStations (fName):
     fields = line.split ()
     
     # Don't include duplicate stations.
-    if fields[0] in stations:
+    if fields[0].ljust(4) in stations:
       continue
-  
+ 
     stations.append (fields[0].ljust(4))
     networks.append (fields[1].ljust(2))
     
