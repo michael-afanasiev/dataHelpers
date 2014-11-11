@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
 import os
-import time
+import sys
 import ftplib
 import urllib
 import argparse
 
-from threading import Thread
+from itertools import repeat
+from multiprocessing import Pool
 
 def reportHook (a, b, c):
 
   print "% 3.1f%% of %d megabytes\r" % (min(100, float(a * b) / c * 100), c * 1.0e-6),
 
-def requestData (file, baseUrl, saveDir):
-
-  if file in os.listdir (args.save_dir):
-    return
+def requestData ((file, baseUrl, saveDir)):
 
   fullPath = os.path.join (baseUrl, file)
   savePath = os.path.join (saveDir, file)
@@ -62,24 +60,11 @@ for file in files:
   # Skip those files already downloaded.
   if file in os.listdir (saveDir):
     continue
-
-  # Fill up the file request until we hit max threads.
-  if counter < numThreads:
+  else:
     getFiles.append (file)
-    counter = counter + 1
-    continue
 
-  # set up threads.
-  for requestFile in getFiles:
-    threads.append (Thread (target=requestData, args=(requestFile, baseUrl, saveDir)))
+# Open a thread pool to do the downloading in parallel.
+if __name__ == '__main__':
 
-  # start threads.
-  [thread.start () for thread in threads]
-
-  # wait threads.
-  [thread.join () for thread in threads]
-
-  # reset for next loop.
-  threads  = []
-  getFiles = []
-  counter  = 0
+  pool = Pool (processes=numThreads)
+  pool.map (requestData, zip (getFiles, repeat (baseUrl), repeat (saveDir)))
