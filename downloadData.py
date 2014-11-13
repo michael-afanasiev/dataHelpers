@@ -19,21 +19,36 @@ def requestData ((file, baseUrl, saveDir)):
   savePath = os.path.join (saveDir, file)
   print "Retrieving: " + file
   urllib.urlretrieve (fullPath, savePath)
+  
+def unpackData (args):
+  
+  for base, _, file in os.walk (args.save_dir):
+    
+    print file
 
-
+#----- Command line arguments.
 parser = argparse.ArgumentParser (description='Downloads relevant data files from IRIS.')
 
 parser.add_argument (
-    "--user_name", type=str, help="IRIS public directory name (e.g. Michael_Afanasiev)", 
-    required=True, 
-    metavar='ftp directory name')
+  "--num_threads", type=int, help="Number of threads for simultaneous downloads",
+  default=8, metavar='Nthreads')
+  
+parser.add_argument (
+  "--skip_download", action='store_true', help="Skips downloading, and goes straight to unpacking "
+    "data", default=False)
 
 parser.add_argument (
-    "--save_dir", type=str, help="Directory to save .seed files in (recommended: ./MISC/seedFiles)",
-    required=True,
-    metavar="save directory name")
+  "--user_name", type=str, help="IRIS public directory name (e.g. Michael_Afanasiev)", 
+  required=True, 
+  metavar='ftp directory name')
+
+parser.add_argument (
+  "--save_dir", type=str, help="Directory to save .seed files in (recommended: ./MISC/seedFiles)",
+  required=True,
+  metavar="save directory name")
 
 args = parser.parse_args ()
+#----- End command line arguments.
 
 directoryPath = '/pub/userdata/' + args.user_name
 
@@ -52,7 +67,7 @@ baseUrl = os.path.join ('ftp://ftp.iris.washington.edu' + directoryPath)
 saveDir = args.save_dir
 
 counter    = 0
-numThreads = 8
+numThreads = args.num_threads
 threads    = []
 getFiles   = []
 for file in files:
@@ -64,7 +79,10 @@ for file in files:
     getFiles.append (file)
 
 # Open a thread pool to do the downloading in parallel.
-if __name__ == '__main__':
+if (not args.skip_download):
+  if __name__ == '__main__':
 
-  pool = Pool (processes=numThreads)
-  pool.map (requestData, zip (getFiles, repeat (baseUrl), repeat (saveDir)))
+    pool = Pool (processes=numThreads)
+    pool.map (requestData, zip (getFiles, repeat (baseUrl), repeat (saveDir)))
+    
+unpackData (args)
