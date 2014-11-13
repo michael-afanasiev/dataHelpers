@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 
+
+import tarfile
+import time
 import os
 import sys
 import ftplib
 import urllib
+import shutil
 import argparse
+import subprocess
+import dataModule as dm
+
+from obspy import read
+from fnmatch import fnmatch
 
 from itertools import repeat
 from multiprocessing import Pool
@@ -22,12 +31,76 @@ def requestData ((file, baseUrl, saveDir)):
   
 def unpackData (args):
   
-  for base, _, file in os.walk (args.save_dir):
-    
-    print file
+  for dataDir in os.listdir (args.data_dir):
+    for saveDir in os.listdir (args.save_dir):
 
+      if dataDir in saveDir:
+
+        print dm.colours.HEADER + "Extracting .sac files for: " + dm.colours.OKBLUE + saveDir + dm.colours.ENDC
+        seedFile    = os.path.join (os.path.abspath (args.save_dir), saveDir) 
+        destination = os.path.join (os.path.abspath (args.data_dir), dataDir)
+        rawDir      = os.path.join (os.path.abspath (args.data_dir), dataDir, 'raw')
+       
+        # Make the extraction directory.
+        if not (os.path.exists ('./sacFiles')):
+          os.makedirs ('./sacFiles')
+
+        # Ensure extraction directory is clean.
+        for file in os.listdir ('./sacFiles'):
+          os.remove (os.path.join ('./sacFiles', file))
+        
+        # Make the raw directory.
+        if not (os.path.exists (rawDir)):
+          os.makedirs (rawDir)
+        else:
+          print dm.colours.WARNING + "Raw file for " + seedFile + " already exisited..." + dm.colours.ENDC
+
+        # Extract the .sac files to a local scratch directory.
+        shutil.copyfile (seedFile, './extract.seed')
+        proc = subprocess.Popen ([args.rdseed_binary, '-d', '-f', './extract.seed', '-q', './sacFiles'], 
+          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate ()
+        retcode = proc.wait ()
+        os.remove ('./extract.seed')
+
+        # Convert all sac files to miniseed.
+        print dm.colours.HEADER + "Converting to miniSeed." + dm.colours.ENDC 
+        for filename in os.listdir ('./sacFiles'):
+          if fnmatch (filename, '*BH[Z,N,E]*') or fnmatch (filename, '*LH[Z,N,E]*'):
+        
+            st = read (os.path.join ('./sacFiles', filename))
+            fname = st[0].stats.station + '.' + st[0].stats.network + '.' + st[0].stats.location + '.' + st[0].stats.channel + '.mseed'
+            st.write (os.path.join ('./sacFiles', fname), format='MSEED')
+        
+        # Tar the sac files.
+        print dm.colours.HEADER + 'Tarring seismograms.' + dm.colours.ENDC
+        tar = tarfile.open ('./rawData.tar', 'w')
+        for filename in os.listdir ('./sacFiles'):
+          if filename.endswith ('.mseed'):
+            tar.add (os.path.join ('./sacFiles', filename), arcname=filename)
+        tar.close ()
+
+        # Mv the tar-ed file to the DATA directory.
+        if os.path.exists (os.path.join (rawDir, 'rawData.tar')):
+          os.remove (os.path.join (rawDir, 'rawData.tar'))
+        shutil.move ('./rawData.tar', rawDir)
+        
+        if retcode == 0:
+          print dm.colours.OKGREEN + "Completed succesfully.\n" + dm.colours.ENDC
+        else:
+          print dm.colours.WARNING + "Something fishy happened with " + seedFile + dm.colours.ENDC + "\n"
+
+  shutil.rmtree ('./sacFiles')
+          
 #----- Command line arguments.
 parser = argparse.ArgumentParser (description='Downloads relevant data files from IRIS.')
+
+parser.add_argument (
+    "--rdseed_binary", type=str, help="Path to rdseed binary", metavar="rdseed binary",
+    required=True)
+
+parser.add_argument (
+  "--data_dir", type=str, help="Lasif DATA directory.", metavar="Lasif data dir.")
 
 parser.add_argument (
   "--num_threads", type=int, help="Number of threads for simultaneous downloads",
