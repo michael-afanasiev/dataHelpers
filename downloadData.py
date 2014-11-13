@@ -36,7 +36,8 @@ def unpackData (args):
 
       if dataDir in saveDir:
 
-        print dm.colours.HEADER + "Extracting .sac files for: " + dm.colours.OKBLUE + saveDir + dm.colours.ENDC
+        print dm.colours.HEADER + "Extracting .sac files for: " + dm.colours.OKBLUE + saveDir + \
+          dm.colours.ENDC
         seedFile    = os.path.join (os.path.abspath (args.save_dir), saveDir) 
         destination = os.path.join (os.path.abspath (args.data_dir), dataDir)
         rawDir      = os.path.join (os.path.abspath (args.data_dir), dataDir, 'raw')
@@ -53,12 +54,13 @@ def unpackData (args):
         if not (os.path.exists (rawDir)):
           os.makedirs (rawDir)
         else:
-          print dm.colours.WARNING + "Raw file for " + seedFile + " already exisited..." + dm.colours.ENDC
+          print dm.colours.WARNING + "Raw file for " + seedFile + " already exisited..." + \
+            dm.colours.ENDC
 
         # Extract the .sac files to a local scratch directory.
         shutil.copyfile (seedFile, './extract.seed')
-        proc = subprocess.Popen ([args.rdseed_binary, '-d', '-f', './extract.seed', '-q', './sacFiles'], 
-          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen ([args.rdseed_binary, '-d', '-f', './extract.seed', '-q', 
+          './sacFiles'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate ()
         retcode = proc.wait ()
         os.remove ('./extract.seed')
@@ -69,7 +71,8 @@ def unpackData (args):
           if fnmatch (filename, '*BH[Z,N,E]*') or fnmatch (filename, '*LH[Z,N,E]*'):
         
             st = read (os.path.join ('./sacFiles', filename))
-            fname = st[0].stats.station + '.' + st[0].stats.network + '.' + st[0].stats.location + '.' + st[0].stats.channel + '.mseed'
+            fname = st[0].stats.station + '.' + st[0].stats.network + '.' + \
+              st[0].stats.location + '.' + st[0].stats.channel + '.mseed'
             st.write (os.path.join ('./sacFiles', fname), format='MSEED')
         
         # Tar the sac files.
@@ -85,10 +88,12 @@ def unpackData (args):
           os.remove (os.path.join (rawDir, 'rawData.tar'))
         shutil.move ('./rawData.tar', rawDir)
         
+        # Report of status of rdseed.
         if retcode == 0:
           print dm.colours.OKGREEN + "Completed succesfully.\n" + dm.colours.ENDC
         else:
-          print dm.colours.WARNING + "Something fishy happened with " + seedFile + dm.colours.ENDC + "\n"
+          print dm.colours.WARNING + "Something fishy happened with " + seedFile + \
+            dm.colours.ENDC + "\n"
 
   shutil.rmtree ('./sacFiles')
           
