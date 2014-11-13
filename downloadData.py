@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-
-import tarfile
-import time
 import os
 import sys
+import time
 import ftplib
 import urllib
 import shutil
+import tarfile
 import argparse
 import subprocess
 import dataModule as dm
@@ -19,10 +18,16 @@ from itertools import repeat
 from multiprocessing import Pool
 
 def reportHook (a, b, c):
-
+  '''
+  Optional progress bar. Default off (looks ugly for parallel downloads).
+  '''
+  
   print "% 3.1f%% of %d megabytes\r" % (min(100, float(a * b) / c * 100), c * 1.0e-6),
 
 def requestData ((file, baseUrl, saveDir)):
+  '''
+  Small function to pull data down from IRIS. Meant to be run in parallel.
+  '''
 
   fullPath = os.path.join (baseUrl, file)
   savePath = os.path.join (saveDir, file)
@@ -30,6 +35,22 @@ def requestData ((file, baseUrl, saveDir)):
   urllib.urlretrieve (fullPath, savePath)
   
 def unpackData (args):
+  '''
+  This function looks through a given directory, and extracts all .SEED files which correspond to
+  an event. The seed files should have been downloaded within this same script, as their names will
+  be references to event names in the LASIF project. The .SAC files are extracted from the master
+  .SEED by rdseed (binary must be provided), into a temporary local directory. Then, obspy is used
+  to read in the .SAC files, and to convert them to .mseed files. These .mseed files are then 
+  tarred up, and moved to the appropriate data directory. Oh also, we're kicking files out of the
+  .SEED that don't begin with BH[Z,N,E] or LH[Z,N,E] mainly because no one seems to know what they
+  actually are.
+  
+  args.data_dir becomes the LASIF DATA directory.
+  args.save_dir becomes the directory where the .SEED files are stored.
+  args.rdseed_binary is the path to the rdseed installation. Turns out the filenames given to 
+  rdseed have an absolute maximum length (hence the copying to the local directory -- absolute
+  paths are too long). WTF man.
+  '''
   
   for dataDir in os.listdir (args.data_dir):
     for saveDir in os.listdir (args.save_dir):
@@ -95,9 +116,11 @@ def unpackData (args):
           print dm.colours.WARNING + "Something fishy happened with " + seedFile + \
             dm.colours.ENDC + "\n"
 
+  # Remove the temporary extraction directory.
   shutil.rmtree ('./sacFiles')
           
 #----- Command line arguments.
+##############################
 parser = argparse.ArgumentParser (description='Downloads relevant data files from IRIS.')
 
 parser.add_argument (
@@ -126,6 +149,7 @@ parser.add_argument (
   metavar="save directory name")
 
 args = parser.parse_args ()
+##############################
 #----- End command line arguments.
 
 directoryPath = '/pub/userdata/' + args.user_name
