@@ -57,7 +57,7 @@ def unpackData (args):
 
       if dataDir in saveDir:
 
-        print dm.colours.HEADER + "Extracting .sac files for: " + dm.colours.OKBLUE + saveDir + \
+        print dm.colours.HEADER + "\nExtracting .sac files for: " + dm.colours.OKBLUE + saveDir + \
           dm.colours.ENDC
         seedFile    = os.path.join (os.path.abspath (args.save_dir), saveDir) 
         destination = os.path.join (os.path.abspath (args.data_dir), dataDir)
@@ -74,9 +74,11 @@ def unpackData (args):
         # Make the raw directory.
         if not (os.path.exists (rawDir)):
           os.makedirs (rawDir)
-        else:
-          print dm.colours.WARNING + "Raw file for " + seedFile + " already exisited..." + \
+
+        if os.path.exists (os.path.join (rawDir, 'rawData.tar')):
+          print dm.colours.WARNING + os.path.join (rawDir, 'rawData.tar') + ' already exisits... skipping' + \
             dm.colours.ENDC
+          continue
 
         # Extract the .sac files to a local scratch directory.
         shutil.copyfile (seedFile, './extract.seed')
@@ -92,7 +94,7 @@ def unpackData (args):
           if fnmatch (filename, '*BH[Z,N,E]*') or fnmatch (filename, '*LH[Z,N,E]*'):
         
             st = read (os.path.join ('./sacFiles', filename))
-            fname = st[0].stats.station + '.' + st[0].stats.network + '.' + \
+            fname = st[0].stats.network + '.' + st[0].stats.station + '.' + \
               st[0].stats.location + '.' + st[0].stats.channel + '.mseed'
             st.write (os.path.join ('./sacFiles', fname), format='MSEED')
         
@@ -111,10 +113,10 @@ def unpackData (args):
         
         # Report of status of rdseed.
         if retcode == 0:
-          print dm.colours.OKGREEN + "Completed succesfully.\n" + dm.colours.ENDC
+          print dm.colours.OKGREEN + "Completed succesfully." + dm.colours.ENDC
         else:
           print dm.colours.WARNING + "Something fishy happened with " + seedFile + \
-            dm.colours.ENDC + "\n"
+            dm.colours.ENDC 
 
   # Remove the temporary extraction directory.
   shutil.rmtree ('./sacFiles')
