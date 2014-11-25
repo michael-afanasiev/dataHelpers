@@ -1,12 +1,27 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import obspy
 import argparse
+import subprocess
+
 import numpy as np
 
+import dataModule as dm
+
 #----- Command line arguments.
-parser = argparse.ArgumentParser (description='Generates a BreqFast request.')
+parser = argparse.ArgumentParser (description='Processes ASCII specfem seismograms.')
+
+parser.add_argument (
+  '--convolve', help='This program will not try and convolve the \
+  synthetic seismograms with a source time function.', default=False, 
+  action="store_true")
+  
+parser.add_argument (
+  '--convolve_binary', type=str, help='Path to the specfem convolve script/binary\
+  cshell script.', metavar='sourcetimeFunction dir'
+)
 
 parser.add_argument (
   '--seismogram_dir', type=str, help='Directory of (convolved) specfem seismogram', 
@@ -26,6 +41,20 @@ parser.add_argument (
 args = parser.parse_args ()
 #----- End command line arguments.
 
+# Check for parser consistency.
+if args.convolve and args.convolve_binary == None:
+  print dm.colours.FAIL + "You've indicated you want to convolve, but haven't specified\
+  the xconvolve_source_time_function binary. Exiting." + dm.colours.ENDC
+  sys.exit ()
+  
+if args.convolve:
+  print "Convolving seismograms."
+  xconvolve_bin = os.path.join (args.seismogram_dir, '../', 'bin', 'xconvolve_source_timefunction')
+  proc = subprocess.Popen ([args.convolve_binary, args.seismogram_dir, xconvolve_bin], 
+  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = proc.communicate ()
+  retcode = proc.wait ()
+  
 # For all seismograms in the seismogram directory.
 for dirname, dirnames, filenames in os.walk (args.seismogram_dir):  
   for filename in filenames:
@@ -41,6 +70,17 @@ for dirname, dirnames, filenames in os.walk (args.seismogram_dir):
     t, data  = temp[:, 0], temp[:, 1]
     dt       = (t[-1] - t[0]) / (len(t) - 1)
 
+    # Kick out samples before time 0
+    tNew    = []
+    dataNew = []
+    for pair in zip (t, data):
+      if pair[0] >= 0:
+        tNew.append (pair[0])
+        dataNew.append (pair[1])
+        
+    t    = tNew
+    data = dataNew
+
     # Initialze obspy trace.
     tr             = obspy.Trace(data=temp[:, 1])
     tr.stats.delta = dt
@@ -55,16 +95,13 @@ for dirname, dirnames, filenames in os.walk (args.seismogram_dir):
     elif 'MXZ' in tr.stats.channel:
       tr.stats.channel = 'Z'
 
-    # XXX: Set the time of the first sample!!!
-    tr.stats.starttime = "2012-06-01T05:07:01.900000Z"
-
-    # Bandpass filter.
-    tr.filter ('lowpass',  freq=(1/args.min_period), corners=5, zerophase=True)          
-    tr.filter ('highpass', freq=(1/args.max_period), corners=2, zerophase=True)          
+    # # Bandpass filter.
+    tr.filter ('lowpass',  freq=(1/args.min_period), corners=5, zerophase=True)
+    tr.filter ('highpass', freq=(1/args.max_period), corners=2, zerophase=True)
     
     # Write to sac file.    
     if not (os.path.isdir (args.write_dir)):
       os.mkdir (args.write_dir)
     sacFileName = os.path.join (
-      args.write_dir, tr.stats.station + '.' + tr.stats.network + '.' + tr.stats.channel + '.mseed')    
+      args.write_dir, tr.stats.network + '.' + tr.stats.station + '.' + tr.stats.channel + '.mseed')    
     tr.write (sacFileName, format='MSEED')
