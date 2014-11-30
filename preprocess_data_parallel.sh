@@ -1,7 +1,5 @@
 #!/bin/bash -l
 
-LASIF_PATH=/scratch/daint/afanasm/LASIF/
-
 #SBATCH --account=ch1
 #SBATCH --job-name="preprocessing"
 #SBATCH --nodes=1
@@ -11,6 +9,10 @@ LASIF_PATH=/scratch/daint/afanasm/LASIF/
 #SBATCH --time=00:30:00
 #SBATCH --output=../OUTPUT/slurm_output/preprocessing.%A.%a.o
 #SBATCH --error=../OUTPUT/slurm_output/preprocessing.%A.%a.e
+
+export MV2_ENABLE_AFFINITY=0
+export KMP_AFFINITY=compact
+export OMP_NUM_THREADS=8
 
 if [ "$1" == '' ]; then
   echo "Usage: ./preprocess_data_parallel [iteration_name]"
@@ -39,7 +41,7 @@ tar -xvf rawData.tar
 rm -f rawData.tar
 
 # Run the preprocessing.
-aprun -n 1 -N 1 lasif preprocess_data $iterationName $myEvent
+aprun -n 1 -N 1 -d 8 lasif preprocess_data $iterationName $myEvent
 
 # Re-tar the raw files.
 tar -cvf rawData.tar *.mseed

@@ -68,7 +68,7 @@ def convolve ((fileName, halfDuration)):
       # Save to new array.
       dataFilt[i] = dataFilt[i] + filterMe * source * dt
       
-  np.savetxt (fileName + '.convolved.NEWMETHOD', np.c_[t, dataFilt], newline='\n', fmt='%10e')
+  np.savetxt (fileName + '.convolved', np.c_[t, dataFilt], newline='\n', fmt='%10e')
   print (' ' + dm.colours.OKGREEN + 'Done.' + dm.colours.ENDC)
 
 ##### BEGIN SCRIPT #####
@@ -86,5 +86,5 @@ for file in os.listdir (args.seismogram_dir):
   
 if __name__ == '__main__':
   
-  pool = Pool (processes=cpu_count ())
+  pool = Pool (processes=cpu_count ()/2)
   pool.map (convolve, zip (convolveFiles, repeat (args.half_duration)))

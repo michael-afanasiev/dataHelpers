@@ -70,16 +70,17 @@ for dirname, dirnames, filenames in os.walk (args.seismogram_dir):
     t, data  = temp[:, 0], temp[:, 1]
     dt       = (t[-1] - t[0]) / (len(t) - 1)
 
-    # Kick out samples before time 0
-    tNew    = []
-    dataNew = []
-    for pair in zip (t, data):
-      if pair[0] >= 0:
-        tNew.append (pair[0])
-        dataNew.append (pair[1])
+    # Kick out samples before time 0. Don't do this. start of specfem simulation corresponds to
+    # rise time.
+#    tNew    = []
+#    dataNew = []
+#    for pair in zip (t, data):
+#      if pair[0] >= 0:
+#        tNew.append (pair[0])
+#        dataNew.append (pair[1])
         
-    t    = tNew
-    data = dataNew
+#    t    = tNew
+#    data = dataNew
 
     # Initialze obspy trace.
     tr             = obspy.Trace(data=temp[:, 1])
