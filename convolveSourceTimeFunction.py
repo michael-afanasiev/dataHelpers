@@ -6,7 +6,6 @@ import math
 import argparse
 
 import numpy as np
-import dataModule as dm
 
 from itertools import repeat
 from multiprocessing import Pool, cpu_count
@@ -34,8 +33,7 @@ def convolve ((fileName, halfDuration)):
   this convolved seismogram with .convolved at the end of it.
   '''
   
-  print (dm.colours.HEADER + "Convolving: " + dm.colours.OKBLUE + fileName + dm.colours.ENDC)
-      
+  print 'Convolving: ' + fileName 
   temp     = np.loadtxt (fileName)
   t, data  = temp[:, 0], temp[:, 1]
   dt       = t[1] - t[0]
@@ -69,7 +67,6 @@ def convolve ((fileName, halfDuration)):
       dataFilt[i] = dataFilt[i] + filterMe * source * dt
       
   np.savetxt (fileName + '.convolved', np.c_[t, dataFilt], newline='\n', fmt='%10e')
-  print (' ' + dm.colours.OKGREEN + 'Done.' + dm.colours.ENDC)
 
 ##### BEGIN SCRIPT #####
 
