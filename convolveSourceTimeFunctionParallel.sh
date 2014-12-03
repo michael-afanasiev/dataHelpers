@@ -7,8 +7,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:30:00
-#SBATCH --output=./logs/slurm_output/convolve.%A.%a.o
-#SBATCH --error=./logs/slurm_output/convolve.%A.%a.e
+#SBATCH --output=./logs/convolve.%A.%a.o
+#SBATCH --error=./logs/convolve.%A.%a.e
 
 export MV2_ENABLE_AFFINITY=0
 export KMP_AFFINITY=compact
@@ -28,6 +28,7 @@ array=($iterationDir/*)
 
 # Parse name from path.
 myEvent=${array[$SLURM_ARRAY_TASK_ID]}
-seismo_dir=$myEvent/OUTPUT_FILES/
+seismo_dir=$(readlink -m $myEvent/OUTPUT_FILES/)
 
+echo $myEvent
 aprun -n 1 -N 1 -d 8 ./convolveSourceTimeFunction.py --seismogram_dir $seismo_dir --half_duration 3.805

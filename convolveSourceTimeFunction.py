@@ -20,6 +20,10 @@ parser.add_argument (
   '--seismogram_dir', type=str, help='Directory of specfem seismograms', 
   required=True, metavar='Seismo dir')
 
+parser.add_argument (
+  '--cmt_solution_file', type=str, help='Location of CMT solution file (for time shift information)',
+  required=True, metavar='Cmtsolution')
+
 args = parser.parse_args ()
 
 # Set up constants
@@ -42,7 +46,18 @@ def convolve ((fileName, halfDuration)):
   # Get number of convolvable samples.
   nJ       = int (math.ceil (1.5 * halfDuration / dt))  
   dataFilt = np.zeros_like (data)
+  dataVel  = np.zeros_like (data)
   
+  # Finite difference.
+  for i in range (1, nSamples-1):
+    dataVel[i] = (data[i+1] - data[i-1]) / (2 * dt)
+
+  dataVel[0]          = (data[1] - data[0]) / dt
+  dataVel[nSamples-1] = (data[nSamples-1] - data[nSamples-2]) / dt
+
+  # Copy back to data array.
+  data = dataVel
+
   # Move along time Axis
   for i, sample in enumerate (np.nditer(data)):    
     for j in range (-nJ, nJ+1):      
@@ -66,7 +81,7 @@ def convolve ((fileName, halfDuration)):
       # Save to new array.
       dataFilt[i] = dataFilt[i] + filterMe * source * dt
       
-  np.savetxt (fileName + '.convolved', np.c_[t, dataFilt], newline='\n', fmt='%10e')
+  np.savetxt (fileName + '.convolved.velocity', np.c_[t, dataFilt], newline='\n', fmt='%10e')
 
 ##### BEGIN SCRIPT #####
 
