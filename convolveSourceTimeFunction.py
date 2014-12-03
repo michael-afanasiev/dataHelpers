@@ -30,7 +30,16 @@ args = parser.parse_args ()
 SOURCE_DECAY_MIMIC_TRIANGLE = 1.6280
 alpha                       = SOURCE_DECAY_MIMIC_TRIANGLE / args.half_duration
 
-def convolve ((fileName, halfDuration)):
+def getTimeShift ():
+  
+  file = open (args.cmt_solution_file, 'r')
+  for line in file:
+    if 'time shift' in line:
+      timeShift = float (line.split ()[2])
+      
+  return timeShift
+
+def convolve ((fileName, halfDuration, timeShift)):
   
   '''
   Convolves an ascii file output from specfem with a gaussian of a specified half-duration. Outputs
@@ -41,14 +50,29 @@ def convolve ((fileName, halfDuration)):
   temp     = np.loadtxt (fileName)
   t, data  = temp[:, 0], temp[:, 1]
   dt       = t[1] - t[0]
-  nSamples = len (data)
+  
+  # Fill into pde time.
+  tEarly = t[0]
+  newTimeArr = []
+  newSiesArr = []
+  while abs (tEarly) < timeShift:
+    
+    tEarly = tEarly - dt
+    newTimeArr.append (tEarly)
+    newSiesArr.append (0.)
+    
+  newTimeArr = newTimeArr[::-1]
+  t          = np.insert (t, 0, newTimeArr)
+  data       = np.insert (data, 0, newSiesArr)
   
   # Get number of convolvable samples.
+  nSamples = len (data)  
   nJ       = int (math.ceil (1.5 * halfDuration / dt))  
   dataFilt = np.zeros_like (data)
   dataVel  = np.zeros_like (data)
   
-  # Finite difference.
+  
+  # Finite difference -- switch to velocity.
   for i in range (1, nSamples-1):
     dataVel[i] = (data[i+1] - data[i-1]) / (2 * dt)
 
@@ -80,10 +104,12 @@ def convolve ((fileName, halfDuration)):
       
       # Save to new array.
       dataFilt[i] = dataFilt[i] + filterMe * source * dt
-      
+            
   np.savetxt (fileName + '.convolved.velocity', np.c_[t, dataFilt], newline='\n', fmt='%10e')
 
 ##### BEGIN SCRIPT #####
+
+timeShift = getTimeShift ()
 
 # Loop through seismograms
 convolveFiles = []
@@ -99,4 +125,4 @@ for file in os.listdir (args.seismogram_dir):
 if __name__ == '__main__':
   
   pool = Pool (processes=cpu_count ()/2)
-  pool.map (convolve, zip (convolveFiles, repeat (args.half_duration)))
+  pool.map (convolve, zip (convolveFiles, repeat (args.half_duration), repeat (timeShift)))
